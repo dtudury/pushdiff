@@ -1,0 +1,23 @@
+{
+  "name": "pushdiff",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "append-only, in-memory, patch-streaming, observable database",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dtudury/pushdiff.git"
+  },
+  "author": "David Tudury <david.tudury@gmail.com>",
+  "bugs": {
+    "url": "https://github.com/dtudury/pushdiff/issues"
+  },
+  "homepage": "https://github.com/dtudury/pushdiff#readme",
+  "dependencies": {
+    "serve": "^13.0.2",
+    "ws": "^8.3.0"
+  }
+}
