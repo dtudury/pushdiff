@@ -11,6 +11,3 @@ webSocket.onmessage = event => {
   console.log(event)
   console.log(event.data)
 }
-
-const pd = new PushDiff()
-console.log(pd)
