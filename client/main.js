@@ -28,16 +28,18 @@ const m = {
 const pd2 = (window.pd2 = new PushDiff())
 
 const i11 = pd1.valuesByIndex.length
-console.log(pd1.valuesByIndex)
 const i12 = pd1.toIndex(m)
 
-console.log(pd1.valuesByIndex.slice(i11, i12 + 1))
+pd2.toIndex([1, 2, 3])
+const changes = pd1.valuesByIndex.slice(i11, i12 + 1)
+console.log(i11, changes)
+const rebaseMap = pd2.rebase(i11, changes)
+console.log(rebaseMap)
 
-pd2.toIndex([0, 1, 2, 3])
-const i2 = pd2.rebase(i11, pd1.valuesByIndex.slice(i11, i12 + 1))
-
-console.log(i12, pd1.fromIndex(i12))
-console.log(i2, pd2.fromIndex(i2))
+console.log('pd1', i12, pd1.fromIndex(i12))
+console.log('pd2', rebaseMap.get(i12), pd2.fromIndex(rebaseMap.get(i12)))
+pd1.applyPatch(i11, changes, rebaseMap)
+// console.log(rebaseMap.get(i12), pd2.fromIndex(rebaseMap.get(i12)))
 
 /*
 pd.replace('/a/b/test', m, 'initial commit')
