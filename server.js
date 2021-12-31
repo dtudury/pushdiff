@@ -3,6 +3,8 @@ import handler from 'serve-handler'
 import { WebSocketServer } from 'ws'
 import { PushDiff } from './lib/pushdiff.js'
 
+const pd = new PushDiff()
+
 const server = http.createServer((request, response) => {
   return handler(request, response)
 })
@@ -22,5 +24,4 @@ server.listen(port, () => {
   console.log(`Running at http://localhost:${port}`)
 })
 
-const pd = new PushDiff()
 console.log(pd)

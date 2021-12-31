@@ -1,21 +1,39 @@
-import { h, proxy, render } from './horseless.0.5.3.min.esm.js'
+import { h, proxy, render, watchFunction } from './horseless.0.5.4.min.esm.js'
 import { PushDiff } from '../lib/pushdiff.js'
 import { getByPath, setByPath } from '../lib/jsonPointer.js'
+
+const clone = o => JSON.parse(JSON.stringify(o))
+
+const model = (window.model = proxy({
+  previous: null,
+  value: null
+}))
+
+const pd = new PushDiff()
 
 const webSocket = new WebSocket('ws://localhost:3000')
 
 webSocket.onopen = event => {
   console.log(event)
   webSocket.send('hello there')
+  watchFunction(() => {
+    const diff = new PushDiff()
+    pd.toIndex(model, diff)
+    webSocket.send(JSON.stringify(Object.entries(diff.valuesByIndex)))
+    console.log(Object.entries(diff.valuesByIndex))
+    console.log(JSON.stringify(model, null, '  '))
+  })
 }
+
 webSocket.onmessage = event => {
   console.log(event)
   console.log(event.data)
 }
 
-const pd1 = (window.pd1 = new PushDiff())
-const pd11 = (window.pd11 = new PushDiff())
-console.log(pd1)
+const replica = (window.replica = new PushDiff())
+replica.toIndex(['a', 'b', 'asdf'])
+console.log('replica.valuesByIndex', replica.valuesByIndex)
+const replicaDiff = (window.replicaDiff = new PushDiff())
 
 const m = {
   b: [1, 2],
@@ -26,55 +44,32 @@ const m = {
   e: null
 }
 
-const i11 = pd1.valuesByIndex.length
-const i12 = pd1.toIndex(m, pd11)
+replica.toIndex(m, replicaDiff) // save changes to replicaDiff instead of applying directly
+console.log('replicaDiff.valuesByIndex', replicaDiff.valuesByIndex)
 
-const pd2 = (window.pd2 = new PushDiff())
+const primary = (window.primary = new PushDiff())
+primary.toIndex(['a', 'b', 'asdf'])
+primary.toIndex([1, 2, 3]) // to get primary ahead of replica
+console.log('primary.valuesByIndex', primary.valuesByIndex)
 
-pd2.toIndex([1, 2, 3])
+const translation = PushDiff.applyDiff(primary, replicaDiff) // update primary with saved changes
+console.log('primary.valuesByIndex', primary.valuesByIndex)
+console.log('translation', translation)
+const translatedReplicaDiff = (window.translatedReplicaDiff = PushDiff.translateDiff(
+  translation,
+  replicaDiff
+))
+console.log(
+  'translatedReplicaDiff.valuesByIndex',
+  translatedReplicaDiff.valuesByIndex
+)
 
-const patch = pd2.rebase(pd11)
-console.log(patch)
-const pd3 = (window.pd3 = pd11.applyPatch(patch))
-console.log(pd3)
-
-/*
-const changes = pd1.valuesByIndex.slice(i11, i12 + 1)
-console.log(i11, changes)
-const rebaseMap = pd2.rebase(i11, changes)
-console.log(rebaseMap)
-
-console.log('pd1', i12, pd1.fromIndex(i12))
-const i2 = rebaseMap.get(i12)
-console.log('pd2', i2, pd2.fromIndex(i2))
-pd1.applyPatch(i11, changes, rebaseMap)
-console.log('pd1', i2, pd1.fromIndex(i2))
-
-const pd3 = (window.pd3 = new PushDiff())
-const pd31 = (window.pd31 = new PushDiff())
-pd3.toIndex(m, pd31)
-*/
-
-// console.log(rebaseMap.get(i12), pd2.fromIndex(rebaseMap.get(i12)))
-
-/*
-pd.replace('/a/b/test', m, 'initial commit')
-console.log(JSON.stringify(pd.namespace, null, ' . '))
-setByPath(m, '/a/f/~', { g: 100, h: 200, i: 300 })
-pd.replace('/b/2', 'outis')
-console.log(JSON.stringify(pd.namespace, null, ' . '))
-pd.replace('/b/2', 'outis')
-console.log(JSON.stringify(pd.namespace, null, ' . '))
-setByPath(m, '/a/f/~', { $ref: '/b/1' })
-pd.replace('/a/b/test', m, 'commit #: the second')
-pd.replace('/b/2', 'outis')
-console.log(JSON.stringify(pd.namespace, null, ' . '))
-*/
-/*
-setByPath(m, '/a/f/~', { $ref: '/b/1' })
-pd.replace('/a/b/test', m, 'commit #: the second')
-console.log(JSON.stringify(pd.namespace, null, ' . '))
-console.log(pd.dereference('/a/b/test').value)
-*/
+const mergedDiff = (window.mergedDiff = PushDiff.mergeDiffs(
+  replica,
+  translatedReplicaDiff
+))
+console.log('mergedDiff.valuesByIndex', mergedDiff.valuesByIndex)
+PushDiff.applyDiff(replica, translatedReplicaDiff) // this *seems* like it should work but re-indexes the diff
+console.log('replica.valuesByIndex', replica.valuesByIndex) // too short! (should have gaps)
 
 window.PushDiff = PushDiff
