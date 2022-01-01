@@ -5,8 +5,8 @@ import { getByPath, setByPath } from '../lib/jsonPointer.js'
 const clone = o => JSON.parse(JSON.stringify(o))
 
 const model = (window.model = proxy({
-  previous: null,
-  value: null
+  shared: null,
+  local: null
 }))
 
 const pd = new PushDiff()
@@ -15,21 +15,24 @@ const webSocket = new WebSocket('ws://localhost:3000')
 
 webSocket.onopen = event => {
   console.log(event)
-  webSocket.send('hello there')
+  let index = 0
   watchFunction(() => {
     const diff = new PushDiff()
     pd.toIndex(model, diff)
-    webSocket.send(JSON.stringify(Object.entries(diff.valuesByIndex)))
-    console.log(Object.entries(diff.valuesByIndex))
-    console.log(JSON.stringify(model, null, '  '))
+    const valueEntries = Object.entries(diff.valuesByIndex)
+    webSocket.send(
+      JSON.stringify({ index, values: Object.entries(diff.valuesByIndex) })
+    )
+    ++index
   })
+  webSocket.onmessage = event => {
+    console.log(event)
+    console.log(event.data)
+  }
 }
 
-webSocket.onmessage = event => {
-  console.log(event)
-  console.log(event.data)
-}
-
+/*
+// this is almost a test...
 const replica = (window.replica = new PushDiff())
 replica.toIndex(['a', 'b', 'asdf'])
 console.log('replica.valuesByIndex', replica.valuesByIndex)
@@ -73,3 +76,4 @@ PushDiff.applyDiff(replica, translatedReplicaDiff) // this *seems* like it shoul
 console.log('replica.valuesByIndex', replica.valuesByIndex) // too short! (should have gaps)
 
 window.PushDiff = PushDiff
+*/

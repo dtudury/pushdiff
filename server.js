@@ -14,7 +14,13 @@ const wss = new WebSocketServer({ noServer: true })
 server.on('upgrade', (request, socket, head) => {
   wss.handleUpgrade(request, socket, head, ws => {
     ws.on('message', data => {
-      console.log(`Received message ${data}`)
+      try {
+        const {index, values} = JSON.parse(data)
+        console.log(index)
+        console.log(values)
+      } catch (error) {
+        console.error(error)
+      }
     })
   })
 })
