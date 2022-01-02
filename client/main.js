@@ -9,25 +9,44 @@ const model = (window.model = proxy({
   local: null
 }))
 
-const pd = new PushDiff()
+let pd = (window.pd = new PushDiff())
 
 const webSocket = new WebSocket('ws://localhost:3000')
+
+const diffs = {}
 
 webSocket.onopen = event => {
   console.log(event)
   let index = 0
   watchFunction(() => {
     const diff = new PushDiff()
-    pd.toIndex(model, diff)
+    diff.nextIndex = pd.nextIndex
+    pd.toIndex(model.local, diff)
     const valueEntries = Object.entries(diff.valuesByIndex)
+    console.log(diff)
+    diffs[index] = diff
     webSocket.send(
       JSON.stringify({ index, values: Object.entries(diff.valuesByIndex) })
     )
     ++index
   })
   webSocket.onmessage = event => {
-    console.log(event)
-    console.log(event.data)
+    try {
+      const { index, translation } = JSON.parse(event.data)
+      console.log(index, translation)
+      const diff = diffs[index]
+      console.log(diff)
+      console.log(new Map(translation))
+      const translatedDiff = PushDiff.translateDiff(new Map(translation), diff)
+      console.log(translatedDiff)
+      pd = window.pd = PushDiff.mergeDiffs(pd, translatedDiff)
+    } catch (e) {
+      console.log(event, event.data)
+      throw e
+    }
+  }
+  webSocket.onclose = event => {
+    console.error('============= onclose', event)
   }
 }
 
