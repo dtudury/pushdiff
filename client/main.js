@@ -16,32 +16,30 @@ const webSocket = new WebSocket('ws://localhost:3000')
 const diffs = {}
 
 webSocket.onopen = event => {
-  console.log(event)
   let index = 0
   watchFunction(() => {
+    // debounce?
     const diff = new PushDiff()
     diff.nextIndex = pd.nextIndex
-    pd.toIndex(model.local, diff)
+    const nsIndex = pd.toIndex(model.local, diff)
     const valueEntries = Object.entries(diff.valuesByIndex)
-    console.log(diff)
     diffs[index] = diff
     webSocket.send(
-      JSON.stringify({ index, values: Object.entries(diff.valuesByIndex) })
+      JSON.stringify({ index, nsIndex, values: Object.entries(diff.valuesByIndex) })
     )
     ++index
   })
   webSocket.onmessage = event => {
     try {
-      const { index, translation } = JSON.parse(event.data)
-      console.log(index, translation)
+      const { index, nsIndex, mapping } = JSON.parse(event.data)
       const diff = diffs[index]
-      console.log(diff)
-      console.log(new Map(translation))
-      const translatedDiff = PushDiff.translateDiff(new Map(translation), diff)
-      console.log(translatedDiff)
+      const translation = new Map(mapping)
+      const translatedDiff = PushDiff.translateDiff(translation, diff)
       pd = window.pd = PushDiff.mergeDiffs(pd, translatedDiff)
+      model.shared = pd.fromIndex(nsIndex)
+      console.log(JSON.parse(JSON.stringify(model.shared)))
     } catch (e) {
-      console.log(event, event.data)
+      console.error(event, event.data)
       throw e
     }
   }
@@ -49,50 +47,3 @@ webSocket.onopen = event => {
     console.error('============= onclose', event)
   }
 }
-
-/*
-// this is almost a test...
-const replica = (window.replica = new PushDiff())
-replica.toIndex(['a', 'b', 'asdf'])
-console.log('replica.valuesByIndex', replica.valuesByIndex)
-const replicaDiff = (window.replicaDiff = new PushDiff())
-
-const m = {
-  b: [1, 2],
-  a: {
-    d: 'asdf',
-    c: true
-  },
-  e: null
-}
-
-replica.toIndex(m, replicaDiff) // save changes to replicaDiff instead of applying directly
-console.log('replicaDiff.valuesByIndex', replicaDiff.valuesByIndex)
-
-const primary = (window.primary = new PushDiff())
-primary.toIndex(['a', 'b', 'asdf'])
-primary.toIndex([1, 2, 3]) // to get primary ahead of replica
-console.log('primary.valuesByIndex', primary.valuesByIndex)
-
-const translation = PushDiff.applyDiff(primary, replicaDiff) // update primary with saved changes
-console.log('primary.valuesByIndex', primary.valuesByIndex)
-console.log('translation', translation)
-const translatedReplicaDiff = (window.translatedReplicaDiff = PushDiff.translateDiff(
-  translation,
-  replicaDiff
-))
-console.log(
-  'translatedReplicaDiff.valuesByIndex',
-  translatedReplicaDiff.valuesByIndex
-)
-
-const mergedDiff = (window.mergedDiff = PushDiff.mergeDiffs(
-  replica,
-  translatedReplicaDiff
-))
-console.log('mergedDiff.valuesByIndex', mergedDiff.valuesByIndex)
-PushDiff.applyDiff(replica, translatedReplicaDiff) // this *seems* like it should work but re-indexes the diff
-console.log('replica.valuesByIndex', replica.valuesByIndex) // too short! (should have gaps)
-
-window.PushDiff = PushDiff
-*/
