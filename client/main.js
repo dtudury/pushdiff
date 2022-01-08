@@ -25,7 +25,11 @@ webSocket.onopen = event => {
     const valueEntries = Object.entries(diff.valuesByIndex)
     diffs[index] = diff
     webSocket.send(
-      JSON.stringify({ index, nsIndex, values: Object.entries(diff.valuesByIndex) })
+      JSON.stringify({
+        index,
+        nsIndex,
+        values: Object.entries(diff.valuesByIndex)
+      })
     )
     ++index
   })
