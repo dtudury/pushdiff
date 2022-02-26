@@ -19,5 +19,11 @@
   "dependencies": {
     "serve": "^13.0.2",
     "ws": "^8.3.0"
-  }
+  },
+  "devDependencies": {
+    "prettier": "^2.5.1",
+    "prettier-config-standard": "^5.0.0",
+    "prettier-plugin-jsdoc": "^0.3.30"
+  },
+  "prettier": "prettier-config-standard"
 }
